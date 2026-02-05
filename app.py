@@ -1,31 +1,31 @@
-from fastapi import FastAPI, Header
-from pydantic import BaseModel
+from fastapi import FastAPI, Header, Request
 from typing import Optional
 
 app = FastAPI(title="Agentic Honeypot API")
-
-class Input(BaseModel):
-    message: Optional[str] = None
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 @app.post("/run")
-def run(
-    payload: Optional[Input] = None,
+async def run(
+    request: Request,
     x_api_key: Optional[str] = Header(default=None)
 ):
-    user_message = (
-        payload.message
-        if payload and payload.message
-        else "Your KYC is pending. Pay ₹10 to verify"
-    )
+    # Safely read body if it exists
+    try:
+        body = await request.json()
+        user_message = body.get("message")
+    except:
+        user_message = None
+
+    if not user_message:
+        user_message = "Your KYC is pending. Pay ₹10 to verify"
 
     conversation = [
         user_message,
         "Your account is blocked. Share your UPI ID to unblock.",
-        "Send ₹10 to verify and share transaction ID.",
+        "Send ₹10 to verify and share transaction ID."
     ]
 
     extracted = {
