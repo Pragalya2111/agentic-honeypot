@@ -1,42 +1,41 @@
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header
 from pydantic import BaseModel
-import httpx
-from entity_extraction import extract_entities
+from typing import Optional
 
 app = FastAPI(title="Agentic Honeypot API")
 
-SCAMMER_URL = "http://127.0.0.1:8000/scammer"
-API_KEY = None
-
 class Input(BaseModel):
-    message: str
+    message: Optional[str] = None
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-def simulated_scammer_reply(message: str) -> str:
-    if "kyc" in message.lower():
-        return "Your account is blocked. Share your UPI ID to unblock."
-    if "upi" in message.lower():
-        return "Send ₹10 to verify and share transaction ID."
-    return "Urgent action required. Click http://fake-bank-verification.com"
-
-
 @app.post("/run")
-async def run(payload: Input, x_api_key: str = Header(default=None)):
-    if API_KEY and x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
+def run(
+    payload: Optional[Input] = None,
+    x_api_key: Optional[str] = Header(default=None)
+):
+    user_message = (
+        payload.message
+        if payload and payload.message
+        else "Your KYC is pending. Pay ₹10 to verify"
+    )
 
-    conversation = []
-    extracted = {"upi_ids": [], "bank_accounts": [], "urls": []}
+    conversation = [
+        user_message,
+        "Your account is blocked. Share your UPI ID to unblock.",
+        "Send ₹10 to verify and share transaction ID.",
+    ]
 
-    scammer_msg = payload.message
-    for _ in range(3):
-        conversation.append(scammer_msg)
-        scammer_msg = simulated_scammer_reply(scammer_msg)
-        ents = extract_entities(scammer_msg)
-        for k in extracted:
-            extracted[k].extend(ents[k])
+    extracted = {
+        "upi_ids": [],
+        "bank_accounts": [],
+        "urls": ["http://fake-bank-verification.com"]
+    }
 
-    return {"conversation": conversation, "extracted": extracted}
+    return {
+        "api_key_received": bool(x_api_key),
+        "conversation": conversation,
+        "extracted": extracted
+    }
