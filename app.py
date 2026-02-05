@@ -34,7 +34,7 @@ async def run(payload: Input, x_api_key: str = Header(default=None)):
     scammer_msg = payload.message
     for _ in range(3):
         conversation.append(scammer_msg)
-        scammer_msg = await call_scammer(scammer_msg)
+        scammer_msg = simulated_scammer_reply(scammer_msg)
         ents = extract_entities(scammer_msg)
         for k in extracted:
             extracted[k].extend(ents[k])
