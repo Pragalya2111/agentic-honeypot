@@ -15,10 +15,13 @@ class Input(BaseModel):
 def health():
     return {"status": "ok"}
 
-async def call_scammer(msg: str):
-    async with httpx.AsyncClient() as client:
-        r = await client.post(SCAMMER_URL, json={"message": msg})
-        return r.json()["reply"]
+def simulated_scammer_reply(message: str) -> str:
+    if "kyc" in message.lower():
+        return "Your account is blocked. Share your UPI ID to unblock."
+    if "upi" in message.lower():
+        return "Send ₹10 to verify and share transaction ID."
+    return "Urgent action required. Click http://fake-bank-verification.com"
+
 
 @app.post("/run")
 async def run(payload: Input, x_api_key: str = Header(default=None)):
